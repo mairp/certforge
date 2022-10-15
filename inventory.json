@@ -1,0 +1,34 @@
+{
+    "devices":[
+        {
+            "hostname":"leaf1",
+            "ip_address":"172.20.20.101",
+            "kind":"server"
+        },
+        {
+            "hostname":"leaf2",
+            "ip_address":"172.20.20.102",
+            "kind":"server"
+        },
+        {
+            "hostname":"spine1",
+            "ip_address":"172.20.20.103",
+            "kind":"server"
+        },
+        {
+            "hostname":"spine2",
+            "ip_address":"172.20.20.104",
+            "kind":"server"
+        },
+        {
+            "hostname":"client1",
+            "ip_address":"192.168.1.1",
+            "kind":"client"
+        },
+        {
+            "hostname":"client2",
+            "ip_address":"192.168.2.1",
+            "kind":"client"
+        }                                
+    ]
+}

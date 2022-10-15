@@ -1,0 +1,30 @@
+# This is an openssl configuration file.
+# to generate self-signed certificates. Using a configuration file like this
+# https://www.ibm.com/docs/en/ztpf/1.1.0.15?topic=gssccr-configuration-file-generating-self-signed-certificates-certificate-requests
+# https://gist.github.com/boreal321/3796440
+# https://superuser.com/questions/738612/openssl-ca-keyusage-extension
+[req]
+prompt                 = no
+days                   = 1024
+#serial                 = 0
+#The following three values can be anything; they just need to 
+#match a section name in the file.
+distinguished_name     = req_distinguished_name
+req_extensions         = v3_req
+x509_extensions        = v3_ca
+[req_distinguished_name]
+countryName            = PT
+stateOrProvinceName    = Lisboa
+localityName           = Amadora
+organizationName       = Nokia
+organizationalUnitName = ION
+commonName             = ion.nokia.com
+emailAddress           = marques.pombal@nokia.com
+[ v3_ca ]
+basicConstraints                = critical,CA:true
+keyUsage                        = cRLSign,keyCertSign
+#nsCertType                      = objCA
+#nsCaPolicyUrl                   = http://example.com/ca-policy/
+subjectKeyIdentifier            = hash
+[ v3_req ]
+nsCertType                      = emailCA,sslCA,objCA,objsign
