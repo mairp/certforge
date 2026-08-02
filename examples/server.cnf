@@ -1,0 +1,32 @@
+# Example OpenSSL config for a server certificate request.
+#
+# Used by certforge.sh to build a CSR (and optionally a self-signed cert).
+# Adjust the distinguished name and subjectAltName to match your host.
+
+[ req ]
+prompt             = no
+default_bits       = 2048
+distinguished_name = req_distinguished_name
+req_extensions     = req_ext
+x509_extensions    = x509_ext
+
+[ req_distinguished_name ]
+countryName            = US
+stateOrProvinceName    = California
+localityName           = San Francisco
+organizationName       = Example Org
+organizationalUnitName = Engineering
+commonName             = server.example.com
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ x509_ext ]
+subjectAltName = @alt_names
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+
+[ alt_names ]
+DNS.1 = server.example.com
+IP.1  = 192.0.2.10

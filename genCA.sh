@@ -35,8 +35,8 @@ function CABuilder() {
             touch ./demoCA/index.txt
             touch ./demoCA/index.txt.attr
             echo "unique_subject = no" > ./demoCA/index.txt.attr
-            touch ./demoCA/serial.txt
-            echo 1000 > ./demoCA/serial.txt
+            touch ./demoCA/serial
+            echo 1000 > ./demoCA/serial
 
         fi  
         cd "${PATH_CA}/${NAME_ROOT}"   
@@ -106,12 +106,17 @@ DEVICE_NUMBER=$(jq '.[] | length' ${PATH_INVENTORY})
 while read LINE; do    
     BITS="2048"
 
-    if [[ $(echo "${LINE}" | awk '/countryName/ {print $1}') == "countryName" ]]; then COUNTRY=$(echo "${LINE}" | awk '/countryName/ {print $3}'); else :; fi
-    if [[ $(echo "${LINE}" | awk '/stateOrProvinceName/ {print $1}') == "stateOrProvinceName" ]]; then STATE=$(echo "${LINE}" | awk '/stateOrProvinceName/ {print $3}'); else :; fi
-    if [[ $(echo "${LINE}" | awk '/localityName/ {print $1}') == "localityName" ]]; then CITY=$(echo "${LINE}" | awk '/localityName/ {print $3}'); else :; fi
-    if [[ $(echo "${LINE}" | awk '/organizationName/ {print $1}') == "organizationName" ]]; then ORG=$(echo "${LINE}" | awk '/organizationName/ {print $3}'); else :; fi
-    if [[ $(echo "${LINE}" | awk '/organizationalUnitName/ {print $1}') == "organizationalUnitName" ]]; then BU=$(echo "${LINE}" | awk '/organizationalUnitName/ {print $3}'); else :; fi
-    if [[ $(echo "${LINE}" | awk '/commonName/ {print $1}') == "commonName" ]]; then FQDN=$(echo "${LINE}" | awk '/commonName/ {print $3}'); else :; fi
+    # Capture the full value after "=" so multi-word fields (e.g. "Example Org",
+    # "San Francisco") are preserved, not just their first token.
+    VALUE=$(echo "${LINE}" | sed -e 's/^[^=]*=[[:space:]]*//' -e 's/[[:space:]]*$//')
+    case "$(echo "${LINE}" | awk '{print $1}')" in
+        countryName)            COUNTRY="${VALUE}" ;;
+        stateOrProvinceName)    STATE="${VALUE}" ;;
+        localityName)           CITY="${VALUE}" ;;
+        organizationName)       ORG="${VALUE}" ;;
+        organizationalUnitName) BU="${VALUE}" ;;
+        commonName)             FQDN="${VALUE}" ;;
+    esac
 done < ${PATH_ROOT_CNF}
 
 echo "======================================================================================================================================"
