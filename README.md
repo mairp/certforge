@@ -1,5 +1,7 @@
 # certforge
 
+[![ShellCheck](https://github.com/mairp/certforge/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/mairp/certforge/actions/workflows/shellcheck.yml)
+
 Small, dependency-light OpenSSL CLI for issuing X.509 certificates.
 
 **`certforge.sh`** turns an OpenSSL config file into a **CSR** (to be signed by
