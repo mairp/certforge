@@ -57,7 +57,7 @@ certforge.sh --config <file.cnf> [--key <file.key>] [--self-signed] [options]
 | `-k, --key FILE` | Reuse an existing private key (RSA or EC). If omitted, a new key is generated. |
 | `-o, --out DIR` | Output directory (default: `./out`). |
 | `-n, --name NAME` | Base name for output files (default: derived from the config file name). |
-| `-t, --key-type T` | Key type to generate: `rsa` or `ec` (default: `rsa`). Ignored with `--key`. |
+| `-t, --key-type T` | Key type to generate: `rsa`, `ec`, `ed25519`, or `ed448` (default: `rsa`). Ignored with `--key`. |
 | `-b, --bits N` | RSA key size for a newly generated key (default: `2048`). Only with `--key-type rsa`. |
 | `--curve NAME` | EC curve for a newly generated key (default: `prime256v1`). Only with `--key-type ec`. |
 | `-s, --self-signed` | Also emit a self-signed certificate instead of only a CSR. |
@@ -108,7 +108,13 @@ The tool covers three cases:
 
 # 7) ECDSA on a specific curve
 ./certforge.sh --config examples/server.cnf --key-type ec --curve secp384r1
+
+# 8) Edwards-curve EdDSA key (Ed25519)
+./certforge.sh --config examples/server.cnf --key-type ed25519
 ```
+
+Supported key types: **RSA**, **EC** (NIST/SECG curves via `--curve`), and
+**Edwards-curve EdDSA** (`ed25519`, `ed448`).
 
 After case 1 or 2, submit the resulting `<name>.csr` to your CA. To inspect it:
 

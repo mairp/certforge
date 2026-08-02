@@ -49,7 +49,11 @@ OPTIONS:
     -o, --out DIR       Output directory (default: ${OUT_DIR}).
     -n, --name NAME     Base name for the output files (default: derived from the
                         config file name).
-    -t, --key-type T    Type of key to generate: rsa or ec (default: ${KEY_TYPE}).
+    -t, --key-type T    Type of key to generate (default: ${KEY_TYPE}):
+                          rsa      RSA (size from --bits)
+                          ec       NIST/SECG elliptic curve (curve from --curve)
+                          ed25519  Edwards-curve EdDSA (Ed25519)
+                          ed448    Edwards-curve EdDSA (Ed448)
                         Ignored when --key is given.
     -b, --bits N        RSA key size for a newly generated key (default: ${BITS}).
                         Only used with --key-type rsa.
@@ -87,6 +91,9 @@ EXAMPLES:
 
     # ECDSA key on the P-384 curve
     ${PROG} --config server.cnf --key-type ec --curve secp384r1
+
+    # Edwards-curve (Ed25519) key
+    ${PROG} --config server.cnf --key-type ed25519
 EOF
 }
 
@@ -122,8 +129,8 @@ fi
 # Normalize --key-type to lower case and validate it.
 KEY_TYPE="${KEY_TYPE,,}"
 case "${KEY_TYPE}" in
-    rsa|ec) ;;
-    *) die "--key-type must be 'rsa' or 'ec': ${KEY_TYPE}" ;;
+    rsa|ec|ed25519|ed448) ;;
+    *) die "--key-type must be one of: rsa, ec, ed25519, ed448 (got: ${KEY_TYPE})" ;;
 esac
 
 [[ "${BITS}" =~ ^[0-9]+$ ]] || die "--bits must be a number: ${BITS}"
@@ -159,14 +166,21 @@ if [[ -n "${KEY}" ]]; then
     KEY_IN="${KEY}"
 else
     guard_overwrite "${KEY_OUT}"
-    if [[ "${KEY_TYPE}" == "ec" ]]; then
-        echo ">> Generating new EC (${CURVE}) private key: ${KEY_OUT}"
-        openssl genpkey -algorithm EC \
-            -pkeyopt "ec_paramgen_curve:${CURVE}" -out "${KEY_OUT}"
-    else
-        echo ">> Generating new ${BITS}-bit RSA private key: ${KEY_OUT}"
-        openssl genrsa -out "${KEY_OUT}" "${BITS}"
-    fi
+    case "${KEY_TYPE}" in
+        ec)
+            echo ">> Generating new EC (${CURVE}) private key: ${KEY_OUT}"
+            openssl genpkey -algorithm EC \
+                -pkeyopt "ec_paramgen_curve:${CURVE}" -out "${KEY_OUT}"
+            ;;
+        ed25519|ed448)
+            echo ">> Generating new ${KEY_TYPE} private key: ${KEY_OUT}"
+            openssl genpkey -algorithm "${KEY_TYPE^^}" -out "${KEY_OUT}"
+            ;;
+        rsa)
+            echo ">> Generating new ${BITS}-bit RSA private key: ${KEY_OUT}"
+            openssl genrsa -out "${KEY_OUT}" "${BITS}"
+            ;;
+    esac
     chmod 600 "${KEY_OUT}"
     KEY_IN="${KEY_OUT}"
 fi
