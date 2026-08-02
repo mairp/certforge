@@ -59,7 +59,7 @@ certforge.sh --config <file.cnf> [--key <file.key>] [--self-signed] [options]
 | `-n, --name NAME` | Base name for output files (default: derived from the config file name). |
 | `-b, --bits N` | RSA key size for a newly generated key (default: `2048`). Ignored with `--key`. |
 | `-s, --self-signed` | Also emit a self-signed certificate instead of only a CSR. |
-| `-d, --days N` | Validity in days for the self-signed cert (default: `365`). |
+| `-d, --days N` | Validity in days for the self-signed cert; positive integer (default: `365`). Only applies with `--self-signed`. |
 | `--san LIST` | Override the config's `subjectAltName`. May be repeated; each value may also be comma-separated. All entries are merged, e.g. `--san DNS:host.example.com --san IP:192.0.2.10`. |
 | `-f, --force` | Overwrite existing output files. |
 | `-h, --help` | Show help. |

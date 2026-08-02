@@ -19,6 +19,7 @@ NAME=""
 BITS="2048"
 SELF_SIGNED="false"
 DAYS="365"
+DAYS_SET="false"
 FORCE="false"
 SAN_ENTRIES=()
 
@@ -50,8 +51,9 @@ OPTIONS:
                         Ignored when --key is given.
     -s, --self-signed   Also produce a self-signed certificate instead of only a
                         CSR. Uses the x509_extensions from the config, if present.
-    -d, --days N        Validity in days for the self-signed certificate
-                        (default: ${DAYS}). Ignored without --self-signed.
+    -d, --days N        Validity in days for the self-signed certificate; must be
+                        a positive integer (default: ${DAYS}). Only applies with
+                        --self-signed.
         --san LIST      Override the config's subjectAltName. May be repeated,
                         and each value may be comma-separated; all entries are
                         merged, e.g. --san DNS:a.example.com --san IP:192.0.2.10.
@@ -87,7 +89,7 @@ while [[ $# -gt 0 ]]; do
         -n|--name)        NAME="${2:-}"; shift 2 ;;
         -b|--bits)        BITS="${2:-}"; shift 2 ;;
         -s|--self-signed) SELF_SIGNED="true"; shift ;;
-        -d|--days)        DAYS="${2:-}"; shift 2 ;;
+        -d|--days)        DAYS="${2:-}"; DAYS_SET="true"; shift 2 ;;
         --san)            SAN_ENTRIES+=("${2:-}"); shift 2 ;;
         -f|--force)       FORCE="true"; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -106,7 +108,13 @@ if [[ -n "${KEY}" && ! -f "${KEY}" ]]; then
 fi
 
 [[ "${BITS}" =~ ^[0-9]+$ ]] || die "--bits must be a number: ${BITS}"
-[[ "${DAYS}" =~ ^[0-9]+$ ]] || die "--days must be a number: ${DAYS}"
+
+# --days must be a positive integer, and only applies to self-signed certs.
+[[ "${DAYS}" =~ ^[0-9]+$ ]] || die "--days must be a whole number: ${DAYS}"
+[[ "${DAYS}" -gt 0 ]] || die "--days must be greater than 0: ${DAYS}"
+if [[ "${DAYS_SET}" == "true" && "${SELF_SIGNED}" != "true" ]]; then
+    echo "warning: --days only applies with --self-signed; ignoring it" >&2
+fi
 
 # Default base name: config file name without its extension.
 if [[ -z "${NAME}" ]]; then
