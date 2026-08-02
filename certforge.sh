@@ -20,7 +20,7 @@ BITS="2048"
 SELF_SIGNED="false"
 DAYS="365"
 FORCE="false"
-SAN=""
+SAN_ENTRIES=()
 
 PROG="$(basename "${0}")"
 
@@ -52,8 +52,9 @@ OPTIONS:
                         CSR. Uses the x509_extensions from the config, if present.
     -d, --days N        Validity in days for the self-signed certificate
                         (default: ${DAYS}). Ignored without --self-signed.
-        --san LIST      Override the config's subjectAltName. Comma-separated
-                        entries, e.g. "DNS:host.example.com,IP:192.0.2.10".
+        --san LIST      Override the config's subjectAltName. May be repeated,
+                        and each value may be comma-separated; all entries are
+                        merged, e.g. --san DNS:a.example.com --san IP:192.0.2.10.
     -f, --force         Overwrite output files if they already exist.
     -h, --help          Show this help and exit.
 
@@ -72,8 +73,8 @@ EXAMPLES:
     # Self-signed certificate valid for two years
     ${PROG} --config server.cnf --self-signed --days 730
 
-    # Override the SAN from the command line
-    ${PROG} --config server.cnf --san "DNS:api.example.com,IP:192.0.2.20"
+    # Override the SAN from the command line (repeat --san to add entries)
+    ${PROG} --config server.cnf --san DNS:api.example.com --san IP:192.0.2.20
 EOF
 }
 
@@ -87,7 +88,7 @@ while [[ $# -gt 0 ]]; do
         -b|--bits)        BITS="${2:-}"; shift 2 ;;
         -s|--self-signed) SELF_SIGNED="true"; shift ;;
         -d|--days)        DAYS="${2:-}"; shift 2 ;;
-        --san)            SAN="${2:-}"; shift 2 ;;
+        --san)            SAN_ENTRIES+=("${2:-}"); shift 2 ;;
         -f|--force)       FORCE="true"; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                die "unknown option: ${1} (try --help)" ;;
@@ -137,12 +138,14 @@ else
     KEY_IN="${KEY_OUT}"
 fi
 
-# A --san value is injected as an -addext, which takes precedence over any
-# subjectAltName in the config file.
+# --san values are injected as a single -addext, which takes precedence over any
+# subjectAltName in the config file. The flag may be repeated, and each value may
+# itself be comma-separated; all entries are merged into one subjectAltName.
 SAN_ARGS=()
-if [[ -n "${SAN}" ]]; then
-    echo ">> Overriding subjectAltName: ${SAN}"
-    SAN_ARGS=(-addext "subjectAltName=${SAN}")
+if [[ ${#SAN_ENTRIES[@]} -gt 0 ]]; then
+    SAN_JOINED="$(IFS=,; echo "${SAN_ENTRIES[*]}")"
+    echo ">> Overriding subjectAltName: ${SAN_JOINED}"
+    SAN_ARGS=(-addext "subjectAltName=${SAN_JOINED}")
 fi
 
 # --- CSR --------------------------------------------------------------------
