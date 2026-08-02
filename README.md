@@ -115,6 +115,14 @@ DNS.1 = server.example.com
 IP.1  = 192.0.2.10
 ```
 
+For standing up your own CA, [`examples/self-signed-ca.cnf`](examples/self-signed-ca.cnf)
+is a template with the right CA extensions (`CA:TRUE`, cert/CRL signing):
+
+```bash
+./certforge.sh --config examples/self-signed-ca.cnf --self-signed --days 3650 --name my-ca
+# -> my-ca.key / my-ca.crt — a CA that can then sign other CSRs
+```
+
 ### End-to-end: signing a `certforge` CSR with an internal CA
 
 The main workflow is generating a CSR with `certforge.sh` and having your

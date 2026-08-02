@@ -1,0 +1,30 @@
+# Template OpenSSL config for a self-signed root CA certificate.
+#
+# Use with certforge.sh to mint a standalone CA:
+#   ./certforge.sh --config examples/self-signed-ca.cnf --self-signed --days 3650 --name my-ca
+#
+# The resulting my-ca.crt / my-ca.key can then sign other CSRs. Edit the
+# distinguished name below for your own environment.
+#
+# References:
+#   https://www.ibm.com/docs/en/ztpf/1.1.0.15?topic=gssccr-configuration-file-generating-self-signed-certificates-certificate-requests
+#   https://superuser.com/questions/738612/openssl-ca-keyusage-extension
+[ req ]
+prompt                 = no
+default_bits           = 4096
+distinguished_name     = req_distinguished_name
+x509_extensions        = v3_ca
+
+[ req_distinguished_name ]
+countryName            = US
+stateOrProvinceName    = California
+localityName           = San Francisco
+organizationName       = Example Org
+organizationalUnitName = IT
+commonName             = Example Internal Root CA
+emailAddress           = ca-admin@example.com
+
+[ v3_ca ]
+basicConstraints       = critical,CA:true
+keyUsage               = critical,cRLSign,keyCertSign
+subjectKeyIdentifier   = hash
