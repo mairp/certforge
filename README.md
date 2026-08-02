@@ -1,18 +1,12 @@
 # certforge
 
-Small, dependency-light OpenSSL helpers for issuing X.509 certificates.
+Small, dependency-light OpenSSL CLI for issuing X.509 certificates.
 
-`certforge` gives you two tools:
+**`certforge.sh`** turns an OpenSSL config file into a **CSR** (to be signed by
+your own/internal CA) or, optionally, a **self-signed certificate**. Bring your
+own private key or let it generate one.
 
-- **`certforge.sh`** — a focused CLI that turns an OpenSSL config file into a
-  **CSR** (to be signed by your own/internal CA) or, optionally, a
-  **self-signed certificate**. Bring your own private key or let it generate one.
-- **`genCA.sh`** — a batch script that stands up a self-signed root CA and issues
-  a certificate for every device listed in `inventory.json`. Handy for lab and
-  test fabrics.
-
-Everything is plain Bash + `openssl` (and `jq` for the batch script). No PKI
-frameworks, no daemons.
+It's plain Bash + `openssl` — no PKI frameworks, no daemons.
 
 ---
 
@@ -20,17 +14,14 @@ frameworks, no daemons.
 
 - `bash` 4+
 - `openssl` 1.1+ / 3.x
-- `jq` (only for `genCA.sh`)
 
 ---
 
-## `certforge.sh` — CSR / self-signed CLI
+## Usage
 
 The typical use is generating a CSR that an **internal CA** then signs. The same
 tool can also produce a self-signed certificate when you don't need an external
 signer.
-
-### Usage
 
 ```
 certforge.sh --config <file.cnf> [--key <file.key>] [--self-signed] [options]
@@ -184,38 +175,6 @@ openssl x509 -in web01.crt -noout -issuer -subject -ext subjectAltName
 You now have `web01.key` + `web01.crt` signed by your internal CA. Deploy the
 key and certificate to the server, and distribute `internal-ca.crt` to clients
 that need to trust it.
-
----
-
-## `genCA.sh` — batch CA for a device inventory
-
-`genCA.sh` builds a self-signed **root CA** and then issues a signed certificate
-for each device in `inventory.json`. It's aimed at spinning up certificates for a
-lab fabric in one shot.
-
-```bash
-./genCA.sh
-```
-
-- Root CA settings come from [`root-self-signed.cnf`](root-self-signed.cnf).
-- Devices come from [`inventory.json`](inventory.json):
-
-  ```json
-  {
-    "devices": [
-      { "hostname": "leaf1", "ip_address": "172.20.20.101", "kind": "server" },
-      { "hostname": "client1", "ip_address": "192.168.1.1",  "kind": "client" }
-    ]
-  }
-  ```
-
-- `kind: server` certificates get a `subjectAltName` with the device IP;
-  `kind: client` certificates omit it.
-- Output lands under `./ca/<hostname>/` (root under `./ca/root/`), with OpenSSL's
-  CA database in `./demoCA/`.
-
-> **Note:** the shipped configs use placeholder values (`example.com`, `US`, …).
-> Edit them for your own environment before use.
 
 ---
 
