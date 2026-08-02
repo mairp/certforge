@@ -16,7 +16,9 @@ CONFIG=""
 KEY=""
 OUT_DIR="./out"
 NAME=""
+KEY_TYPE="rsa"
 BITS="2048"
+CURVE="prime256v1"
 SELF_SIGNED="false"
 DAYS="365"
 DAYS_SET="false"
@@ -42,13 +44,18 @@ REQUIRED:
     -c, --config FILE   OpenSSL config file describing the subject and extensions.
 
 OPTIONS:
-    -k, --key FILE      Reuse an existing private key. If omitted, a new RSA key
-                        is generated.
+    -k, --key FILE      Reuse an existing private key. If omitted, a new key is
+                        generated (see --key-type).
     -o, --out DIR       Output directory (default: ${OUT_DIR}).
     -n, --name NAME     Base name for the output files (default: derived from the
                         config file name).
-    -b, --bits N        RSA key size for a newly generated key (default: ${BITS}).
+    -t, --key-type T    Type of key to generate: rsa or ec (default: ${KEY_TYPE}).
                         Ignored when --key is given.
+    -b, --bits N        RSA key size for a newly generated key (default: ${BITS}).
+                        Only used with --key-type rsa.
+        --curve NAME    EC curve for a newly generated key (default: ${CURVE}).
+                        Only used with --key-type ec. See: openssl ecparam
+                        -list_curves.
     -s, --self-signed   Also produce a self-signed certificate instead of only a
                         CSR. Uses the x509_extensions from the config, if present.
     -d, --days N        Validity in days for the self-signed certificate; must be
@@ -77,6 +84,9 @@ EXAMPLES:
 
     # Override the SAN from the command line (repeat --san to add entries)
     ${PROG} --config server.cnf --san DNS:api.example.com --san IP:192.0.2.20
+
+    # ECDSA key on the P-384 curve
+    ${PROG} --config server.cnf --key-type ec --curve secp384r1
 EOF
 }
 
@@ -87,7 +97,9 @@ while [[ $# -gt 0 ]]; do
         -k|--key)         KEY="${2:-}"; shift 2 ;;
         -o|--out)         OUT_DIR="${2:-}"; shift 2 ;;
         -n|--name)        NAME="${2:-}"; shift 2 ;;
+        -t|--key-type)    KEY_TYPE="${2:-}"; shift 2 ;;
         -b|--bits)        BITS="${2:-}"; shift 2 ;;
+        --curve)          CURVE="${2:-}"; shift 2 ;;
         -s|--self-signed) SELF_SIGNED="true"; shift ;;
         -d|--days)        DAYS="${2:-}"; DAYS_SET="true"; shift 2 ;;
         --san)            SAN_ENTRIES+=("${2:-}"); shift 2 ;;
@@ -106,6 +118,13 @@ command -v openssl >/dev/null 2>&1 || die "openssl not found on PATH"
 if [[ -n "${KEY}" && ! -f "${KEY}" ]]; then
     die "key file not found: ${KEY}"
 fi
+
+# Normalize --key-type to lower case and validate it.
+KEY_TYPE="${KEY_TYPE,,}"
+case "${KEY_TYPE}" in
+    rsa|ec) ;;
+    *) die "--key-type must be 'rsa' or 'ec': ${KEY_TYPE}" ;;
+esac
 
 [[ "${BITS}" =~ ^[0-9]+$ ]] || die "--bits must be a number: ${BITS}"
 
@@ -140,8 +159,14 @@ if [[ -n "${KEY}" ]]; then
     KEY_IN="${KEY}"
 else
     guard_overwrite "${KEY_OUT}"
-    echo ">> Generating new ${BITS}-bit RSA private key: ${KEY_OUT}"
-    openssl genrsa -out "${KEY_OUT}" "${BITS}"
+    if [[ "${KEY_TYPE}" == "ec" ]]; then
+        echo ">> Generating new EC (${CURVE}) private key: ${KEY_OUT}"
+        openssl genpkey -algorithm EC \
+            -pkeyopt "ec_paramgen_curve:${CURVE}" -out "${KEY_OUT}"
+    else
+        echo ">> Generating new ${BITS}-bit RSA private key: ${KEY_OUT}"
+        openssl genrsa -out "${KEY_OUT}" "${BITS}"
+    fi
     chmod 600 "${KEY_OUT}"
     KEY_IN="${KEY_OUT}"
 fi

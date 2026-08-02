@@ -54,10 +54,12 @@ certforge.sh --config <file.cnf> [--key <file.key>] [--self-signed] [options]
 | Option | Description |
 | --- | --- |
 | `-c, --config FILE` | **Required.** OpenSSL config describing the subject and extensions. |
-| `-k, --key FILE` | Reuse an existing private key. If omitted, a new RSA key is generated. |
+| `-k, --key FILE` | Reuse an existing private key (RSA or EC). If omitted, a new key is generated. |
 | `-o, --out DIR` | Output directory (default: `./out`). |
 | `-n, --name NAME` | Base name for output files (default: derived from the config file name). |
-| `-b, --bits N` | RSA key size for a newly generated key (default: `2048`). Ignored with `--key`. |
+| `-t, --key-type T` | Key type to generate: `rsa` or `ec` (default: `rsa`). Ignored with `--key`. |
+| `-b, --bits N` | RSA key size for a newly generated key (default: `2048`). Only with `--key-type rsa`. |
+| `--curve NAME` | EC curve for a newly generated key (default: `prime256v1`). Only with `--key-type ec`. |
 | `-s, --self-signed` | Also emit a self-signed certificate instead of only a CSR. |
 | `-d, --days N` | Validity in days for the self-signed cert; positive integer (default: `365`). Only applies with `--self-signed`. |
 | `--san LIST` | Override the config's `subjectAltName`. May be repeated; each value may also be comma-separated. All entries are merged, e.g. `--san DNS:host.example.com --san IP:192.0.2.10`. |
@@ -100,6 +102,12 @@ The tool covers three cases:
 # 5) Override the SAN without editing the config (repeat --san for more entries)
 ./certforge.sh --config examples/server.cnf \
   --san DNS:api.example.com --san DNS:www.example.com --san IP:192.0.2.20
+
+# 6) ECDSA key instead of RSA (default curve prime256v1 / P-256)
+./certforge.sh --config examples/server.cnf --key-type ec
+
+# 7) ECDSA on a specific curve
+./certforge.sh --config examples/server.cnf --key-type ec --curve secp384r1
 ```
 
 After case 1 or 2, submit the resulting `<name>.csr` to your CA. To inspect it:
