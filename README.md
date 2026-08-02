@@ -124,6 +124,67 @@ DNS.1 = server.example.com
 IP.1  = 192.0.2.10
 ```
 
+### End-to-end: signing a `certforge` CSR with an internal CA
+
+The main workflow is generating a CSR with `certforge.sh` and having your
+**internal CA** sign it. Below is a complete, runnable example using a local
+OpenSSL CA to play the part of that internal CA.
+
+**1. Set up the internal CA** (you already have this in a real environment):
+
+```bash
+# Internal root CA key + self-signed CA certificate
+openssl genrsa -out internal-ca.key 4096
+openssl req -x509 -new -nodes -key internal-ca.key -sha256 -days 3650 \
+  -subj "/C=US/O=Example Org/OU=IT/CN=Example Internal Root CA" \
+  -out internal-ca.crt
+```
+
+**2. Generate the server key + CSR with `certforge`:**
+
+```bash
+./certforge.sh --config examples/server.cnf --name web01 --out .
+# -> web01.key  (private key)
+# -> web01.csr  (submit this to the CA)
+```
+
+**3. Have the internal CA sign the CSR.** Provide an extensions file so the
+signed certificate keeps its SANs (a CA does not copy them from the CSR by
+default):
+
+```bash
+cat > web01-ext.cnf <<'EOF'
+basicConstraints = CA:FALSE
+keyUsage         = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName   = @alt_names
+[ alt_names ]
+DNS.1 = server.example.com
+IP.1  = 192.0.2.10
+EOF
+
+openssl x509 -req -in web01.csr \
+  -CA internal-ca.crt -CAkey internal-ca.key -CAcreateserial \
+  -days 825 -sha256 -extfile web01-ext.cnf -out web01.crt
+```
+
+**4. Verify the issued certificate against the CA:**
+
+```bash
+openssl verify -CAfile internal-ca.crt web01.crt
+# web01.crt: OK
+
+openssl x509 -in web01.crt -noout -issuer -subject -ext subjectAltName
+# issuer=C=US, O=Example Org, OU=IT, CN=Example Internal Root CA
+# subject=..., CN=server.example.com
+# X509v3 Subject Alternative Name:
+#     DNS:server.example.com, IP Address:192.0.2.10
+```
+
+You now have `web01.key` + `web01.crt` signed by your internal CA. Deploy the
+key and certificate to the server, and distribute `internal-ca.crt` to clients
+that need to trust it.
+
 ---
 
 ## `genCA.sh` — batch CA for a device inventory
