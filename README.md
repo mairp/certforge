@@ -60,6 +60,7 @@ certforge.sh --config <file.cnf> [--key <file.key>] [--self-signed] [options]
 | `-b, --bits N` | RSA key size for a newly generated key (default: `2048`). Ignored with `--key`. |
 | `-s, --self-signed` | Also emit a self-signed certificate instead of only a CSR. |
 | `-d, --days N` | Validity in days for the self-signed cert (default: `365`). |
+| `--san LIST` | Override the config's `subjectAltName`. Comma-separated, e.g. `"DNS:host.example.com,IP:192.0.2.10"`. |
 | `-f, --force` | Overwrite existing output files. |
 | `-h, --help` | Show help. |
 
@@ -95,6 +96,9 @@ The tool covers three cases:
 
 # 4) Custom key size, output directory and file name
 ./certforge.sh --config examples/server.cnf --bits 4096 --out ./certs --name web01
+
+# 5) Override the SAN without editing the config
+./certforge.sh --config examples/server.cnf --san "DNS:api.example.com,IP:192.0.2.20"
 ```
 
 After case 1 or 2, submit the resulting `<name>.csr` to your CA. To inspect it:

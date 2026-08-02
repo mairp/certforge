@@ -20,6 +20,7 @@ BITS="2048"
 SELF_SIGNED="false"
 DAYS="365"
 FORCE="false"
+SAN=""
 
 PROG="$(basename "${0}")"
 
@@ -51,6 +52,8 @@ OPTIONS:
                         CSR. Uses the x509_extensions from the config, if present.
     -d, --days N        Validity in days for the self-signed certificate
                         (default: ${DAYS}). Ignored without --self-signed.
+        --san LIST      Override the config's subjectAltName. Comma-separated
+                        entries, e.g. "DNS:host.example.com,IP:192.0.2.10".
     -f, --force         Overwrite output files if they already exist.
     -h, --help          Show this help and exit.
 
@@ -68,6 +71,9 @@ EXAMPLES:
 
     # Self-signed certificate valid for two years
     ${PROG} --config server.cnf --self-signed --days 730
+
+    # Override the SAN from the command line
+    ${PROG} --config server.cnf --san "DNS:api.example.com,IP:192.0.2.20"
 EOF
 }
 
@@ -81,6 +87,7 @@ while [[ $# -gt 0 ]]; do
         -b|--bits)        BITS="${2:-}"; shift 2 ;;
         -s|--self-signed) SELF_SIGNED="true"; shift ;;
         -d|--days)        DAYS="${2:-}"; shift 2 ;;
+        --san)            SAN="${2:-}"; shift 2 ;;
         -f|--force)       FORCE="true"; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                die "unknown option: ${1} (try --help)" ;;
@@ -130,17 +137,25 @@ else
     KEY_IN="${KEY_OUT}"
 fi
 
+# A --san value is injected as an -addext, which takes precedence over any
+# subjectAltName in the config file.
+SAN_ARGS=()
+if [[ -n "${SAN}" ]]; then
+    echo ">> Overriding subjectAltName: ${SAN}"
+    SAN_ARGS=(-addext "subjectAltName=${SAN}")
+fi
+
 # --- CSR --------------------------------------------------------------------
 guard_overwrite "${CSR_OUT}"
 echo ">> Generating CSR: ${CSR_OUT}"
-openssl req -new -key "${KEY_IN}" -out "${CSR_OUT}" -config "${CONFIG}"
+openssl req -new -key "${KEY_IN}" -out "${CSR_OUT}" -config "${CONFIG}" "${SAN_ARGS[@]}"
 
 # --- self-signed certificate (optional) ------------------------------------
 if [[ "${SELF_SIGNED}" == "true" ]]; then
     guard_overwrite "${CRT_OUT}"
     echo ">> Generating self-signed certificate (${DAYS} days): ${CRT_OUT}"
     openssl req -x509 -new -nodes -key "${KEY_IN}" -days "${DAYS}" \
-        -out "${CRT_OUT}" -config "${CONFIG}"
+        -out "${CRT_OUT}" -config "${CONFIG}" "${SAN_ARGS[@]}"
 fi
 
 # --- summary ----------------------------------------------------------------
