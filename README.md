@@ -10,6 +10,28 @@ It's plain Bash + `openssl` — no PKI frameworks, no daemons.
 
 ---
 
+## Quickstart
+
+```bash
+git clone https://github.com/mairp/certforge.git
+cd certforge
+
+# Generate a private key + CSR to hand to your internal CA
+./certforge.sh --config examples/server.cnf --name web01
+# -> out/web01.key   (private key)
+# -> out/web01.csr   (submit this to your CA)
+
+# ...or produce a self-signed certificate instead
+./certforge.sh --config examples/server.cnf --name web01 --self-signed
+# -> out/web01.key / out/web01.csr / out/web01.crt
+```
+
+Edit `examples/server.cnf` (subject and `subjectAltName`) to match your host,
+then re-run. See [Usage](#usage) for all options and the
+[internal-CA walkthrough](#end-to-end-signing-a-certforge-csr-with-an-internal-ca).
+
+---
+
 ## Requirements
 
 - `bash` 4+
